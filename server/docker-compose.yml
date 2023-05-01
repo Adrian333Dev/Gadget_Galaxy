@@ -1,0 +1,16 @@
+# docker-compose.yml
+# Docker connection string: postgres://postgres:postgres@localhost:5432/
+
+version: '3.8'
+services:
+  postgres:
+    image: postgres:13.5
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: gadget_galaxy
+    ports:
+      - 5432:5432
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
