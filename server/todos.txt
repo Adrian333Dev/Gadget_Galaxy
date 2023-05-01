@@ -1,3 +1,4 @@
 1. add password confirm to dto.
 2. add strong password and password confirm validation to dto.
 3. add more details to user dto like first name, last name, email, phone number, etc. (Optional)
+4. check for custom validators in nestjs docs.
