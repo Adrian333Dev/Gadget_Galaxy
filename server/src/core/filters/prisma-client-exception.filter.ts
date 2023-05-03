@@ -9,6 +9,7 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
     const ctx = host.switchToHttp();
     const res = ctx.getResponse<Response>();
     const message = exception.message || 'Something went wrong';
+    console.log({ exception });
 
     switch (exception.code) {
       case 'P2002':

@@ -8,11 +8,11 @@ import {
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
-import { CreateUserDto } from './user.dto';
+import { SignUpDto } from './user.dto';
 import { UserEntity } from './user.entity';
 
 @Controller('users')
-@ApiTags('Users')
+@ApiTags('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -22,15 +22,15 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
-  @Get()
+  @Get(':userId')
   @ApiCreatedResponse({ type: UserEntity })
-  findOne(@Param('userId', ParseIntPipe) userId: number) {
-    return this.usersService.findOne(userId);
+  findOneById(@Param('userId', ParseIntPipe) userId: number) {
+    return this.usersService.findOneByField({ userId });
   }
 
-  @Post()
+  @Post('signup')
   @ApiCreatedResponse({ type: UserEntity })
-  create(@Body() createUserDto: CreateUserDto) {
+  signUp(@Body() createUserDto: SignUpDto) {
     return this.usersService.create(createUserDto);
   }
 }
