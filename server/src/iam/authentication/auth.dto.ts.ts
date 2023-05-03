@@ -21,3 +21,8 @@ export class SignInDto extends SignUpDto {
   @IsEmpty()
   username: string;
 }
+
+export class RefreshTokenDto {
+  @IsNotEmpty()
+  refreshToken: string;
+}

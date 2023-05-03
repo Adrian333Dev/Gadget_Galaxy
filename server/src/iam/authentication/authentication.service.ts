@@ -9,7 +9,7 @@ import { User } from '@prisma/client';
 
 import { HashingService } from '../hashing/hashing.service';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { SignInDto, SignUpDto } from './auth.dto.ts';
+import { RefreshTokenDto, SignInDto, SignUpDto } from './auth.dto.ts';
 import jwtConfig from '../config/jwt.config';
 import { ConfigType } from '@nestjs/config';
 import { IActiveUser } from '../interfaces/active-user.interface';
@@ -69,5 +69,47 @@ export class AuthenticationService {
     );
 
     return { accessToken };
+  }
+
+  async generateTokens({ userId, email }: User) {
+    const [accessToken, refreshToken] = await Promise.all([
+      this.signToken<Partial<IActiveUser>>(
+        userId,
+        this.jwtConfiguration.accessTokenTtl,
+        { email: email },
+      ),
+      this.signToken(userId, this.jwtConfiguration.refreshTokenTtl),
+    ]);
+    return { accessToken, refreshToken };
+  }
+
+  async refreshTokens(refreshTokenDto: RefreshTokenDto) {
+    try {
+      const { secret, audience, issuer } = this.jwtConfiguration;
+      const { sub: userId } = await this.jwtService.verifyAsync<
+        Pick<IActiveUser, 'sub'>
+      >(refreshTokenDto.refreshToken, { secret, audience, issuer });
+      const user = await this.prismaService.user.findUnique({
+        where: { userId },
+      });
+      return this.generateTokens(user);
+    } catch (err) {
+      throw new UnauthorizedException();
+    }
+  }
+
+  private async signToken<T>(userId: number, expiresIn: number, payload?: T) {
+    return await this.jwtService.signAsync(
+      {
+        sub: userId,
+        ...payload,
+      },
+      {
+        audience: this.jwtConfiguration.audience,
+        issuer: this.jwtConfiguration.issuer,
+        secret: this.jwtConfiguration.secret,
+        expiresIn,
+      },
+    );
   }
 }

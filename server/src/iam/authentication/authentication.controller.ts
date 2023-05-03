@@ -1,8 +1,17 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { ActiveUser } from './../decorators/active-user.decorator';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+} from '@nestjs/common';
 import { Auth } from '../decorators/auth.decorator';
 import { AuthType } from '../enums/auth-type.enum';
 import { AuthenticationService } from './authentication.service';
-import { SignInDto, SignUpDto } from './auth.dto.ts';
+import { RefreshTokenDto, SignInDto, SignUpDto } from './auth.dto.ts';
+import { IActiveUser } from '../interfaces/active-user.interface';
 
 @Auth(AuthType.None)
 @Controller('auth')
@@ -28,15 +37,15 @@ export class AuthenticationController {
     return this.authService.signIn(signInDto);
   }
 
-  // @HttpCode(HttpStatus.OK) // changed since the default is 201
-  // @Post('refresh-tokens')
-  // refreshTokens(@Body() refreshTokenDto: RefreshTokenDto) {
-  //   return this.authService.refreshTokens(refreshTokenDto);
-  // }
+  @HttpCode(HttpStatus.OK) // changed since the default is 201
+  @Post('refresh-tokens')
+  refreshTokens(@Body() refreshTokenDto: RefreshTokenDto) {
+    return this.authService.refreshTokens(refreshTokenDto);
+  }
 
-  // @Auth(AuthType.Bearer) // 👈 Apply decorator to individual routes
-  // @Get('me')
-  // async getMe(@Request() req) {
-  //   return req.user;
-  // }
+  @Auth(AuthType.Bearer)
+  @Get('me')
+  async getMe(@ActiveUser() user: IActiveUser) {
+    return user;
+  }
 }
