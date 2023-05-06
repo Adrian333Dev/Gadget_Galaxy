@@ -6,13 +6,15 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
+import { ConfigType } from '@nestjs/config';
+import { randomUUID } from 'crypto';
 
-import { HashingService } from '../hashing/hashing.service';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { HashingService } from '../hashing/hashing.service';
 import { RefreshTokenDto, SignInDto, SignUpDto } from './auth.dto.ts';
 import jwtConfig from '../config/jwt.config';
-import { ConfigType } from '@nestjs/config';
 import { IActiveUser } from '../interfaces/active-user.interface';
+import { RefreshTokenIdsStorage } from './refresh-token-ids.storage';
 
 @Injectable()
 export class AuthenticationService {
@@ -22,6 +24,7 @@ export class AuthenticationService {
     @Inject(jwtConfig.KEY)
     private readonly jwtConfiguration: ConfigType<typeof jwtConfig>,
     private readonly jwtService: JwtService,
+    private readonly refreshTokenIdsStorage: RefreshTokenIdsStorage,
   ) {}
 
   async signUp({ username, email, password }: SignUpDto): Promise<User> {
@@ -72,26 +75,40 @@ export class AuthenticationService {
   }
 
   async generateTokens({ userId, email }: User) {
+    const refreshTokenId = randomUUID();
     const [accessToken, refreshToken] = await Promise.all([
       this.signToken<Partial<IActiveUser>>(
         userId,
         this.jwtConfiguration.accessTokenTtl,
-        { email: email },
+        { email },
       ),
-      this.signToken(userId, this.jwtConfiguration.refreshTokenTtl),
+      this.signToken(userId, this.jwtConfiguration.refreshTokenTtl, {
+        refreshTokenId,
+      }),
     ]);
+    await this.refreshTokenIdsStorage.insert(userId, refreshTokenId);
     return { accessToken, refreshToken };
   }
 
   async refreshTokens(refreshTokenDto: RefreshTokenDto) {
     try {
       const { secret, audience, issuer } = this.jwtConfiguration;
-      const { sub: userId } = await this.jwtService.verifyAsync<
-        Pick<IActiveUser, 'sub'>
-      >(refreshTokenDto.refreshToken, { secret, audience, issuer });
+      const { sub: userId, refreshTokenId } =
+        await this.jwtService.verifyAsync<IActiveUser>(
+          refreshTokenDto.refreshToken,
+          { secret, audience, issuer },
+        );
       const user = await this.prismaService.user.findUnique({
         where: { userId },
       });
+      if (!user) throw new UnauthorizedException();
+      const isRefreshTokenValid = await this.refreshTokenIdsStorage.validate(
+        userId,
+        refreshTokenId,
+      );
+      if (!isRefreshTokenValid) throw new UnauthorizedException();
+      else this.refreshTokenIdsStorage.invalidate(userId);
+
       return this.generateTokens(user);
     } catch (err) {
       throw new UnauthorizedException();

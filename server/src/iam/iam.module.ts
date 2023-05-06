@@ -1,3 +1,4 @@
+import { RefreshTokenIdsStorage } from './authentication/refresh-token-ids.storage';
 import { Module } from '@nestjs/common';
 import { HashingService } from './hashing/hashing.service';
 import { BcryptService } from './hashing/bcrypt.service';
@@ -26,6 +27,7 @@ import { AccessTokenGuard } from './authentication/guards/access-token.guard';
       useClass: AccessTokenGuard,
     },
     AccessTokenGuard,
+    RefreshTokenIdsStorage,
     AuthenticationService,
   ],
   exports: [HashingService],

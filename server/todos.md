@@ -27,3 +27,5 @@
 
     **Note**: checkout `access-token.guard.ts:27`, `authenticaion.controller.ts:20` for necessary changes.
 - [ ] complete `auth.controller.ts` and `auth.service.ts`.
+- [ ] separate `redis` utils in `refresh-token-ids.storage.ts` to a separate module.
+- [ ] add interfaces for `refresh-token` data.
